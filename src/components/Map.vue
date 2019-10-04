@@ -68,7 +68,9 @@
         <select v-model="onSelectedCity">
           <option v-for="(item, index) in cityObject" :key="index" :value="index">{{index}}</option>
         </select>
+        <button name="controll-button" @click="drawingColor">上色</button>
         <button name="controll-button" @click="handleSelectAllArea">全選</button>
+        <button name="controll-button">清空選取</button>
         <div
           class="input-group"
           v-for="(item, index) in cityObject[onSelectedCity]" :key="index"
@@ -76,8 +78,6 @@
           <input type="checkbox" name="area" :value="item" v-model="onSelectedArea" /> {{item}}
           <input v-if="controller.drawingType === 1" type="text" name="use-color-code" :placeholder="computeUseColorPlaceholder" />
         </div>
-        <button name="controll-button" @click="drawingColor">上色</button>
-        <button name="controll-button">清空選取</button>
       </div>
       <div v-if="controller.inputType === 2" class="control-section">
         <button>展開</button>
@@ -179,6 +179,7 @@ export default {
           '新店區',
           '深坑區',
           '坪林區',
+          '石碇區',
           '烏來區',
         ],
         桃園市: [
@@ -552,7 +553,7 @@ export default {
             this.onSelectedArea
           ) {
             this.onSelectedArea.forEach(e => {
-              mapSvg.select('#' + e)
+              mapSvg.select('#' + this.onSelectedCity + e)
                 .transition()
                 .duration(666)
                 .ease(d3.easeCubicIn)
@@ -602,7 +603,7 @@ export default {
           return d.properties.COUNTYNAME + ' ' + d.properties.TOWNNAME;
         })
         .attr('id', (d) => {
-          return d.properties.TOWNNAME;
+          return d.properties.COUNTYNAME + d.properties.TOWNNAME;
         })
         .style('stroke', 'black');
 
