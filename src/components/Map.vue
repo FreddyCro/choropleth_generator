@@ -91,13 +91,23 @@
       <div v-if="controller.inputType === 1" class="control-section">
         <button class="controll-button fold-button" @click="hanldeSectionFold($event)">展開</button>
         <h3>選縣市</h3>
-        <select v-model="onSelectedCity">
-          <option v-for="(item, index) in cityObject" :key="index" :value="index">{{index}}</option>
+        <select v-if="controller.layer === 2" v-model="onSelectedCity">
+          <option
+            v-for="(item, index) in computeAreaSelectedList"
+            :key="index"
+            :value="index"
+          >
+            {{index}}
+          </option>
         </select>
         <button name="controll-button" @click="drawingColor">上色</button>
         <button name="controll-button" @click="handleSelectAllArea">全選</button>
         <button name="controll-button">清空選取</button>
-        <div class="input-group" v-for="(item, index) in cityObject[onSelectedCity]" :key="index">
+        <div
+          class="input-group"
+          v-for="(item, index) in computedAreaOptionList"
+          :key="index"
+        >
           <input
             type="checkbox"
             name="area"
@@ -109,7 +119,7 @@
             v-if="controller.drawingType === 1"
             type="text"
             name="use-color-code"
-            :value="onSelectedAreaList[index].value"
+            :value="onSelectedAreaList[index] ? onSelectedAreaList[index].value : null"
             @change="handleInputUseColor(index, $event)"
             :placeholder="computeUseColorPlaceholder"
           />
@@ -166,10 +176,10 @@ export default {
         specificColor: null,
         dataRangeMin: 0,
         dataRangeMax: 0,
-        dataCategoryInput: "",
-        dataTextAreaInput: ""
+        dataCategoryInput: null,
+        dataTextAreaInput: null
       },
-      onSelectedCity: "",
+      onSelectedCity: null,
       onSelectedAreaList: [],
       cityObject: {
         基隆市: [
@@ -564,6 +574,16 @@ export default {
     };
   },
   computed: {
+    computeAreaSelectedList() {
+      if (this.controller.layer === 1) return null;
+      if (this.controller.layer === 2) return this.cityObject;
+      return null;
+    },
+    computedAreaOptionList() {
+      if (this.controller.layer === 1) return Object.keys(this.cityObject);
+      if (this.controller.layer === 2) return this.cityObject[this.onSelectedCity];
+      return null;
+    },
     computeUseColorPlaceholder() {
       if (this.controller.dataType === 2) return "ex: B";
       if (this.controller.drawingType === 1) return "ex: 50";
@@ -631,6 +651,7 @@ export default {
     },
     drawingColor() {
       const mapSvg = d3.select("#map");
+      const selectedCity = this.onSelectedCity ? this.onSelectedCity : '';
       switch (this.controller.inputType) {
         // 選擇器
         case 1:
@@ -652,7 +673,7 @@ export default {
               this.onSelectedAreaList.forEach(e => {
                 if (e.checked) {
                   mapSvg
-                    .select("#" + this.onSelectedCity + e.name)
+                    .select("#" + selectedCity + e.name)
                     .transition()
                     .duration(666)
                     .ease(d3.easeCubicIn)
@@ -673,7 +694,7 @@ export default {
               this.onSelectedAreaList.forEach(e => {
                 if (e.checked) {
                   mapSvg
-                    .select("#" + this.onSelectedCity + e.name)
+                    .select("#" + selectedCity + e.name)
                     .transition()
                     .duration(666)
                     .ease(d3.easeCubicIn)
@@ -694,8 +715,10 @@ export default {
             if (this.colorParams.specificColor && this.onSelectedAreaList) {
               this.onSelectedAreaList.forEach(e => {
                 if (e.checked) {
+                  console.log("#" + selectedCity + e.name);
+                  
                   mapSvg
-                    .select("#" + this.onSelectedCity + e.name)
+                    .select("#" + selectedCity + e.name)
                     .transition()
                     .duration(666)
                     .ease(d3.easeCubicIn)
@@ -766,6 +789,15 @@ export default {
     initCountyMap() {
       // 清空地圖
       d3.selectAll("path").remove();
+      // 初始化資料
+      this.onSelectedAreaList = Object.keys(this.cityObject).map(e => {
+        return {
+          name: e,
+          category: null,
+          value: null,
+          checked: false
+        };
+      });
 
       let topojson = require("topojson");
       let mapSvg = d3
