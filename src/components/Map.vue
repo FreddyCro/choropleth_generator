@@ -7,8 +7,18 @@
         <input type="radio" name="map-layer" @change="handleChangeLayer(1)" checked="true" /> 縣市
         <input type="radio" name="map-layer" @change="handleChangeLayer(2)" /> 鄉鎮
         <h3>顯示範圍</h3>
-        <input type="radio" name="map-visiblity" checked="true" /> 全部
-        <input type="radio" name="map-visiblity" /> 選取之區域
+        <input type="radio" name="map-visiblity" @change="handleShowAllArea(false)" checked="true" /> 全部
+        <input type="radio" name="map-visiblity" @change="handleShowAllArea(true)" /> 選取行政區
+        <div v-if="controller.showAllArea" class="area-to-show-selected-container">
+          <div
+            v-for="(item, index) in Object.keys(this.cityObject)"
+            :key="index"
+            class="area-to-show-group"
+          >
+            <input type="checkbox" @change="handleShowSelectedArea(item, $event)" checked="true" />
+            {{item}}
+          </div>
+        </div>
       </div>
       <div class="control-section">
         <div class="sub-section">
@@ -18,7 +28,7 @@
             name="color-method"
             @change="handleChangeDrawingType(1)"
             checked="true"
-          /> 微●智慧輸入
+          /> 微🐈智慧輸入
           <input type="radio" name="color-method" @change="handleChangeDrawingType(2)" /> 輸入色碼
         </div>
         <div class="sub-section">
@@ -31,7 +41,7 @@
         <input type="radio" name="data-type" @change="handleChangeDataType(2)" /> Category
       </div>
       <div class="control-section">
-        <button class="controll-button fold-button" @click="hanldeSectionFold($event)">展開</button>
+        <button class="control-button fold-button" @click="hanldeSectionFold($event)">展開</button>
         <!-- Numeric -->
         <div v-show="controller.dataType === 1 && controller.drawingType === 1" class="sub-section">
           <div class="sub-section-row">
@@ -89,25 +99,19 @@
         </div>
       </div>
       <div v-if="controller.inputType === 1" class="control-section">
-        <button class="controll-button fold-button" @click="hanldeSectionFold($event)">展開</button>
+        <button class="control-button fold-button" @click="hanldeSectionFold($event)">展開</button>
         <h3>選縣市</h3>
         <select v-if="controller.layer === 2" v-model="onSelectedCity">
           <option
             v-for="(item, index) in computeAreaSelectedList"
             :key="index"
             :value="index"
-          >
-            {{index}}
-          </option>
+          >{{index}}</option>
         </select>
-        <button name="controll-button" @click="drawingColor">上色</button>
-        <button name="controll-button" @click="handleSelectAllArea">全選</button>
-        <button name="controll-button">清空選取</button>
-        <div
-          class="input-group"
-          v-for="(item, index) in computedAreaOptionList"
-          :key="index"
-        >
+        <button class="control-button" name="control-button" @click="drawingColor">上色</button>
+        <button class="control-button" name="control-button" @click="handleSelectAllArea">全選</button>
+        <button class="control-button" name="control-button">清空選取</button>
+        <div class="input-group" v-for="(item, index) in computedAreaOptionList" :key="index">
           <input
             type="checkbox"
             name="area"
@@ -126,7 +130,7 @@
         </div>
       </div>
       <div v-if="controller.inputType === 2" class="control-section">
-        <button class="controll-button fold-button" @click="hanldeSectionFold($event)">展開</button>
+        <button class="control-button fold-button" @click="hanldeSectionFold($event)">展開</button>
         <h3>輸入資料</h3>
         <textarea
           name="data-text-area-input"
@@ -135,13 +139,24 @@
           v-model="colorParams.dataTextAreaInput"
           placeholder="基隆市仁愛區,20"
         />
-        <button name="controll-button" @click="drawingColor">上色</button>
+        <button name="control-button" @click="drawingColor">上色</button>
       </div>
     </section>
     <section class="color-map-section map-container">
       <div class="map-section map-section-mayor">
-        <button class="controll-button fold-button" @click="hanldeSectionFold($event)">展開</button>
-        <svg id="map" />
+        <div class="map-wrapper" :style="computeMapStyle">
+          <svg id="map" viewBox="0 0 550 550" />
+        </div>
+        <div class="map-scale-control-button-container">
+          <button class="control-button map-scale-button" @click="hanldeMapScale('+')">+</button>
+          <button class="control-button map-scale-button" @click="hanldeMapScale('-')">-</button>
+        </div>
+        <div class="map-direction-control-button-container">
+          <button class="control-button map-direction-button" @click="hanldeMapTranslate('up')">↑</button>
+          <button class="control-button map-direction-button" @click="hanldeMapTranslate('down')">↓</button>
+          <button class="control-button map-direction-button" @click="hanldeMapTranslate('left')">←</button>
+          <button class="control-button map-direction-button" @click="hanldeMapTranslate('right')">→</button>
+        </div>
       </div>
       <div class="map-section map-section-minor">
         <h3>樣式</h3>
@@ -160,15 +175,21 @@ export default {
   data() {
     return {
       mapConfig: {
-        width: "100%",
-        height: "100%",
+        width: "550px",
+        height: "550px",
         stroke: "1px"
       },
       controller: {
         layer: 1,
         dataType: 1,
+        showAllArea: false,
         drawingType: 1,
-        inputType: 1
+        inputType: 1,
+        mapScale: 1,
+        mapTranslate: {
+          x: 0,
+          y: 0
+        }
       },
       colorParams: {
         colorNum: 5,
@@ -581,7 +602,8 @@ export default {
     },
     computedAreaOptionList() {
       if (this.controller.layer === 1) return Object.keys(this.cityObject);
-      if (this.controller.layer === 2) return this.cityObject[this.onSelectedCity];
+      if (this.controller.layer === 2)
+        return this.cityObject[this.onSelectedCity];
       return null;
     },
     computeUseColorPlaceholder() {
@@ -594,6 +616,18 @@ export default {
       if (this.colorParams.dataCategoryInput)
         return this.colorParams.dataCategoryInput.split(",");
       else return 1;
+    },
+    computeMapStyle() {
+      return {
+        transform:
+          "scale(" +
+          this.controller.mapScale +
+          ") translate(" +
+          this.controller.mapTranslate.x +
+          "%," +
+          this.controller.mapTranslate.y +
+          "%)"
+      };
     }
   },
   watch: {
@@ -613,6 +647,24 @@ export default {
       this.controller.layer = index;
       if (index === 1) this.initCountyMap();
       if (index === 2) this.initTownMap();
+    },
+    handleShowAllArea(boolean) {
+      this.controller.showAllArea = boolean;
+    },
+    handleShowSelectedArea(item, event) {
+      if (event.target.checked)
+        d3.selectAll("." + item)
+          .transition()
+          .duration(666)
+          .ease(d3.easeCubicIn)
+          .style("opacity", 1);
+      if (!event.target.checked)
+        d3.selectAll("." + item)
+          .transition()
+          .duration(666)
+          .ease(d3.easeCubicIn)
+          .style("opacity", 0);
+      return null;
     },
     handleChangeDrawingType(index) {
       this.controller.drawingType = index;
@@ -649,9 +701,33 @@ export default {
         });
       });
     },
+    hanldeMapScale(zoom) {
+      if (zoom === "+") this.controller.mapScale += 0.3;
+      if (zoom === "-")
+        this.controller.mapScale = Math.max(this.controller.mapScale - 0.3, 0);
+      return null;
+    },
+    hanldeMapTranslate(dir) {
+      switch (dir) {
+        case "up":
+          this.controller.mapTranslate.y -= 10; 
+          break;
+        case "down":
+          this.controller.mapTranslate.y += 10; 
+          break;
+        case "left":
+          this.controller.mapTranslate.x += 10; 
+          break;
+        case "right":
+          this.controller.mapTranslate.x -= 10; 
+          break;
+        default:
+          break;
+      }
+    },
     drawingColor() {
       const mapSvg = d3.select("#map");
-      const selectedCity = this.onSelectedCity ? this.onSelectedCity : '';
+      const selectedCity = this.onSelectedCity ? this.onSelectedCity : "";
       switch (this.controller.inputType) {
         // 選擇器
         case 1:
@@ -715,8 +791,6 @@ export default {
             if (this.colorParams.specificColor && this.onSelectedAreaList) {
               this.onSelectedAreaList.forEach(e => {
                 if (e.checked) {
-                  console.log("#" + selectedCity + e.name);
-                  
                   mapSvg
                     .select("#" + selectedCity + e.name)
                     .transition()
@@ -807,8 +881,8 @@ export default {
 
       let projection = d3
         .geoMercator()
-        .center([121, 25.3])
-        .scale(5000);
+        .center([123.5, 24.5])
+        .scale(3500);
 
       let path = d3.geoPath().projection(projection);
       let map = d3.json("./twCounty2010.topo.json");
@@ -819,6 +893,7 @@ export default {
           response.objects.layer1
         );
         mapSvg
+          .append("g")
           .selectAll("path")
           .data(countiesLayerTopo.features)
           .enter()
@@ -845,8 +920,8 @@ export default {
 
       let projection = d3
         .geoMercator()
-        .center([121, 25.3])
-        .scale(5000);
+        .center([123.5, 24.5])
+        .scale(3500);
 
       let path = d3.geoPath().projection(projection);
       let map = d3.json("./TOWN_MOI_1080726.json");
@@ -858,6 +933,7 @@ export default {
         );
 
         mapSvg
+          .append("g")
           .selectAll("path")
           .data(countiesLayerTopo.features)
           .enter()
@@ -886,6 +962,10 @@ export default {
   height: 100vh;
   display: flex;
   justify-content: center;
+  .control-button {
+    width: 60px;
+    height: 25px;
+  }
   .fold-button {
     position: absolute;
     top: 0;
@@ -913,15 +993,32 @@ export default {
   .map-section {
     position: relative;
     width: 100%;
+    overflow: hidden;
     display: flex;
     justify-content: flex-start;
     align-items: flex-start;
     border: solid 1px;
     padding: 10px;
+    margin: 3px 0;
   }
   .map-section-mayor {
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     height: 80%;
+    .map-scale-control-button-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+    .map-direction-control-button-container {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+    }
   }
   .map-section-minor {
     position: relative;
@@ -935,18 +1032,25 @@ export default {
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
+  overflow-y: scroll;
   .control-section {
     position: relative;
     width: 100%;
     height: 100%;
     border: solid 1px;
     padding: 10px;
+    margin: 3px 0;
   }
 }
 .map-container {
   position: relative;
   width: 60%;
   overflow: hidden;
+}
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
 }
 .full-page {
   position: fixed;
