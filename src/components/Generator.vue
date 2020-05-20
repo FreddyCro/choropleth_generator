@@ -161,7 +161,6 @@
       <div class="map-section map-section-minor">
         <h3>樣式</h3>
         <input type="checkbox" name="show-area-name" /> 顯示區域名稱
-        <!-- <h1>Choropleth Generator © 2019</h1> -->
       </div>
     </section>
   </div>
@@ -171,7 +170,7 @@
 import * as d3 from "d3";
 
 export default {
-  name: "D3Map",
+  name: "Generator",
   data() {
     return {
       mapConfig: {
@@ -678,7 +677,6 @@ export default {
     handleChangeInputType(index) {
       this.controller.inputType = index;
     },
-    hanldeSectionFold: function(event) {},
     handleInputUseColor(index, event) {
       this.onSelectedAreaList[index].value = event.target.value;
     },

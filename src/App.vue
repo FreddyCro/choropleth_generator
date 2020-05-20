@@ -1,16 +1,16 @@
-<template>
-  <div id="app">
-    <Map/>
-  </div>
+<template lang="pug">
+div#app
+  main
+    Generator
 </template>
 
 <script>
-import Map from './components/Map.vue'
+import Generator from './components/Generator.vue'
 
 export default {
   name: 'app',
   components: {
-    Map
+    Generator
   }
 }
 </script>
