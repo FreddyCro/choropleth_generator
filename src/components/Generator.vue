@@ -145,7 +145,7 @@
     <section class="color-map-section map-container">
       <div class="map-section map-section-mayor">
         <div class="map-wrapper" :style="computeMapStyle">
-          <svg id="map" viewBox="0 0 550 550" />
+          <svg id="map" viewBox="0 0 550 550" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" />
         </div>
         <div class="map-scale-control-button-container">
           <button class="control-button map-scale-button" @click="hanldeMapScale('+')">+</button>
@@ -160,7 +160,7 @@
       </div>
       <div class="map-section map-section-minor">
         <h3>樣式</h3>
-        <input type="checkbox" name="show-area-name" /> 顯示區域名稱
+        <!-- <input type="checkbox" name="show-area-name" /> 顯示區域名稱 -->
       </div>
     </section>
   </div>
@@ -874,13 +874,11 @@ export default {
       let topojson = require("topojson");
       let mapSvg = d3
         .select("#map")
-        .attr("width", this.mapConfig.width)
-        .attr("height", this.mapConfig.height);
 
       let projection = d3
         .geoMercator()
-        .center([123.5, 24.5])
-        .scale(3500);
+        .center([122.5, 24.5])
+        .scale(5500);
 
       let path = d3.geoPath().projection(projection);
       let map = d3.json("./twCounty2010.topo.json");
@@ -913,8 +911,6 @@ export default {
       let topojson = require("topojson");
       let mapSvg = d3
         .select("#map")
-        .attr("width", this.mapConfig.width)
-        .attr("height", this.mapConfig.height);
 
       let projection = d3
         .geoMercator()
@@ -1001,9 +997,7 @@ export default {
   }
   .map-section-mayor {
     position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     height: 80%;
     .map-scale-control-button-container {
       position: absolute;
@@ -1047,8 +1041,8 @@ export default {
 }
 .map-wrapper {
   position: relative;
-  width: 100%;
   height: 100%;
+  width: 100%;
 }
 .full-page {
   position: fixed;
