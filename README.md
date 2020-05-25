@@ -1,4 +1,6 @@
-# vue_map
+# Choropleth_generator
+
+[demo](http://freddycro.herokuapp.com/choropleth-generator/)
 
 ## Project setup
 ```
